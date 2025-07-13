@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Pizzas Dinámico - Tambo</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Lilita+One&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #fdf8f2; /* Un crema muy suave */
+            color: #333;
+            overflow-x: hidden; /* Prevenir scroll horizontal por animaciones */
+        }
+
+        .hero-section {
+            height: 65vh; /* Altura más pronunciada para el efecto hero */
+            min-height: 400px;
+            background: url('https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cGl6emF8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=1000&q=80') no-repeat center center;
+            background-size: cover;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            position: relative; /* Para el overlay opcional */
+            color: white;
+        }
+
+        .hero-section::before { /* Overlay oscuro para legibilidad del texto */
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 700px; /* Limitar ancho del contenido hero */
+        }
+
+        .main-title {
+            font-family: 'Lilita One', cursive; /* Fuente más llamativa para el título */
+            font-size: 3.5rem; /* Más grande */
+            letter-spacing: 1px;
+            line-height: 1.2;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            margin-bottom: 1.5rem;
+            /* GSAP animará los divs hijos de SplitText */
+        }
+        /* Asegurar que los chars/words de SplitText sean inline-block para transformaciones */
+        .main-title > div {
+            display: inline-block;
+        }
+
+
+        .search-button-hero {
+            background-color: #FF7A00; /* Naranja vibrante */
+            color: white;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            padding: 14px 32px;
+            border-radius: 50px; /* Más redondeado */
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(255, 122, 0, 0.4);
+        }
+        .search-button-hero:hover {
+            background-color: #E66A00;
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 6px 20px rgba(255, 122, 0, 0.5);
+        }
+        .search-button-hero:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+
+        .search-button-hero--2 {
+            background-color: #1b68f8; /* Naranja vibrante */
+            color: white;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            padding: 14px 32px;
+            border-radius: 18px; /* Más redondeado */
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0, 132, 255, 0.4);
+            cursor: default;
+        }
+
+        .content-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            margin-top: -50px; /* Solapar ligeramente con el hero */
+            position: relative;
+            z-index: 10; /* Asegurar que esté sobre el hero */
+        }
+
+        .results-container {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .result-item {
+            background-color: #FFF8F0;
+            border-left: 4px solid #FF7A00;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+            transition: transform 0.2s ease-out;
+        }
+        .result-item:hover {
+            transform: translateX(5px);
+        }
+        .result-item h3 {
+            color: #D95F00; /* Naranja oscuro */
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <header class="hero-section">
+        <div class="hero-content">
+            <h1 id="mainTitle" class="main-title">
+                Scraping de Tambo
+            </h1>
+            <button id="searchButton" class="search-button-hero--2">
+                Comienza a buscar
+            </button>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto content-card p-6 md:p-8">
+            <form id="searchForm" class="flex flex-col md:flex-row items-center gap-4 mb-6">
+                <input id="searchInput" type="text" placeholder="¿Qué quieres buscar en Tambo?" class="flex-1 border border-orange-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400" required>
+                <button id="searchButton" class="search-button-hero" type="submit">
+                    Buscar
+                </button>
+            </form>
+            <div id="results" class="results-container">
+                <h2 id="resultsTitle" class="text-2xl font-semibold mb-6 text-center text-gray-700">Resultados:</h2>
+                <div id="resultsList" class="space-y-4">
+                    <!-- Los resultados se insertarán aquí -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GSAP CDN -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script> -->
+    <!-- GSAP SplitText Plugin CDN (Revisar licencia para producción) -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/SplitText.min.js"></script> -->
+
+    <script>
+        const searchForm = document.getElementById('searchForm');
+        const searchInput = document.getElementById('searchInput');
+        const searchButtonHero = document.getElementById('searchButton');
+        const resultsList = document.getElementById('resultsList');
+        const resultsDiv = document.getElementById('results');
+        const resultsTitle = document.getElementById('resultsTitle');
+        
+        searchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const query = searchInput.value.trim();
+            if (!query) return;
+            searchButtonHero.disabled = true;
+            searchButtonHero.textContent = 'Buscando...';
+
+            try {
+                resultsList.innerHTML = '';
+                resultsDiv.style.opacity = 1;
+                resultsDiv.style.visibility = 'visible';
+                resultsDiv.style.transform = 'none';
+                resultsTitle.style.opacity = 1;
+                resultsTitle.style.transform = 'none';
+
+                // Petición real al backend con query
+                const response = await fetch(`/search-pizzas?q=${encodeURIComponent(query)}`);
+                if (!response.ok) {
+                    throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+                }
+                const data = await response.json();
+                let pizzas = [];
+                if (Array.isArray(data)) {
+                    pizzas = data;
+                } else if (data.error) {
+                    throw new Error(data.error);
+                } else {
+                    pizzas = [];
+                }
+
+                if (!pizzas || pizzas.length === 0) {
+                    resultsList.innerHTML = '<p class="text-center text-gray-500">No se encontraron resultados.</p>';
+                } else {
+                    pizzas.forEach((result, index) => {
+                        const resultElement = document.createElement('div');
+                        resultElement.className = 'result-item flex items-center space-x-4';
+                        resultElement.innerHTML = `
+                            <img src="${result.image}" alt="${result.title}" class="w-20 h-20 object-cover rounded-lg border border-orange-200 flex-shrink-0">
+                            <div>
+                                <h3 class="text-lg mb-1">${result.title}</h3>
+                                <p class="text-gray-700 font-bold">${result.price}</p>
+                            </div>
+                        `;
+                        resultsList.appendChild(resultElement);
+                    });
+                    resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            } catch (error) {
+                console.error('Error completo:', error);
+                resultsDiv.style.opacity = 1;
+                resultsDiv.style.visibility = 'visible';
+                resultsDiv.style.transform = 'none';
+                resultsList.innerHTML = '<p class="text-center text-red-500">¡Ups! Algo salió mal con la búsqueda.</p>';
+            } finally {
+                searchButtonHero.disabled = false;
+                searchButtonHero.textContent = 'Buscar';
+            }
+        });
+    </script>
+</body>
+</html>
